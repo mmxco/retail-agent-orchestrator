@@ -13,15 +13,15 @@ The escalation cycle features two autonomous agents negotiating across lead time
 ```mermaid
 sequenceDiagram
     autonumber
-    participant StoreOps as Store Operations Lead<br/>(Store #104 Denver)
-    participant Merch as Inventory Merchandising Lead<br/>(Western Division)
+    participant StoreOps as Store Operations Lead (Store #104 Denver)
+    participant Merch as Inventory Merchandising Lead (Western Division)
 
-    StoreOps->>Merch: 🚨 Urgent Stockout Alert: SKU-4092 (0 on hand, Promo in < 48h, 50 units needed)
+    StoreOps->>Merch: Urgent Stockout Alert: SKU-4092 (0 on hand, Promo in < 48h, 50 units needed)
     Merch->>Merch: Analyzes DC safety stock vs. Store #109 excess WOS vs. courier rates
     Merch->>StoreOps: Proposes Hybrid Plan (18 units Store #109 transfer + 32 units expedited DC pull)
     StoreOps->>Merch: Validates receiving dock capability for Saturday 07:00 AM delivery window
-    Merch->>StoreOps: 📋 Issues structured RESOLUTION CONSENSUS (quantities, logistics cost, ERP actions)
-    StoreOps->>Merch: Confirms ERP actions & manifest prep; concludes with TERMINATE
+    Merch->>StoreOps: Issues structured RESOLUTION CONSENSUS (quantities, logistics cost, ERP actions)
+    StoreOps->>Merch: Confirms ERP actions and manifest prep - concludes with TERMINATE
 ```
 
 ---
