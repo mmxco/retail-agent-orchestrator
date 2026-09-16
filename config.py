@@ -42,18 +42,28 @@ def get_llm_config(
 
     selected_model = model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
+    # Build fallback candidates to ensure resilience against free-tier rate limits
+    candidate_models = [selected_model]
+    for fallback in ["gemini-flash-latest", "gemini-3-flash-preview"]:
+        if fallback not in candidate_models:
+            candidate_models.append(fallback)
+
     config_list = [
         {
-            "model": selected_model,
+            "model": m,
             "api_key": api_key or "placeholder_key",
             "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
             "temperature": temperature,
+            "max_retries": 5,
+            "timeout": 60,
         }
+        for m in candidate_models
     ]
 
     llm_config: Dict[str, Any] = {
         "config_list": config_list,
         "temperature": temperature,
+        "timeout": 60,
     }
 
     if seed is not None:
