@@ -7,6 +7,8 @@ targeting Google Gemini models via Google's OpenAI-compatible endpoint.
 
 import os
 import sys
+import logging
+import warnings
 from typing import Any, Dict
 from dotenv import load_dotenv
 
@@ -16,6 +18,11 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
+# Suppress library-level cost and cache warnings
+warnings.filterwarnings("ignore", message=".*DiskCache requires.*")
+logging.getLogger("autogen.oai.client").setLevel(logging.ERROR)
+logging.getLogger("root").setLevel(logging.ERROR)
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -23,7 +30,7 @@ load_dotenv()
 def get_llm_config(
     model: str | None = None,
     temperature: float = 0.2,
-    seed: int | None = 42,
+    seed: int | None = None,
 ) -> Dict[str, Any]:
     """
     Constructs and returns the Microsoft AutoGen LLM configuration dictionary.
@@ -56,6 +63,8 @@ def get_llm_config(
             "temperature": temperature,
             "max_retries": 5,
             "timeout": 60,
+            # Custom pricing eliminates AutoGen's 'Model is not found' pricing warning
+            "price": [0.0001, 0.0004],
         }
         for m in candidate_models
     ]

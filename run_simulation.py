@@ -10,6 +10,8 @@ Resolves an out-of-stock anomaly for SKU-4092 prior to a promotional weekend.
 
 import os
 import sys
+import time
+import threading
 
 # Ensure UTF-8 output handling for cross-platform terminals
 if hasattr(sys.stdout, "reconfigure"):
@@ -19,6 +21,45 @@ if hasattr(sys.stderr, "reconfigure"):
 
 from config import get_llm_config
 from agents import create_store_ops_agent, create_inventory_merch_agent
+
+
+class ActivityIndicator:
+    """Thread-safe terminal spinner showing live reasoning activity and elapsed time."""
+    def __init__(self):
+        self._stop_event = threading.Event()
+        self._thread = None
+        self._message = ""
+        self._start_time = 0.0
+
+    def start(self, message: str) -> None:
+        self.stop()
+        self._stop_event.clear()
+        self._message = message
+        self._start_time = time.time()
+        self._thread = threading.Thread(target=self._spin, daemon=True)
+        self._thread.start()
+
+    def _spin(self) -> None:
+        frames = ["|", "/", "-", "\\"]
+        idx = 0
+        while not self._stop_event.is_set():
+            elapsed = time.time() - self._start_time
+            sys.stdout.write(f"\r  [{frames[idx % len(frames)]}] {self._message} ({elapsed:.1f}s)...")
+            sys.stdout.flush()
+            idx += 1
+            time.sleep(0.12)
+
+    def stop(self, completion_label: str | None = None) -> None:
+        if self._thread and self._thread.is_alive():
+            self._stop_event.set()
+            self._thread.join(timeout=0.5)
+            elapsed = time.time() - self._start_time
+            # Overwrite line cleanly
+            sys.stdout.write("\r" + " " * 85 + "\r")
+            if completion_label:
+                sys.stdout.write(f"  [DONE] {completion_label} (took {elapsed:.1f}s)\n")
+            sys.stdout.flush()
+            self._thread = None
 
 
 def print_banner(title: str) -> None:
@@ -53,6 +94,25 @@ def run_escalation_simulation():
     print("[INIT] Initializing agents...")
     store_ops = create_store_ops_agent(llm_config=llm_config)
     inventory_merch = create_inventory_merch_agent(llm_config=llm_config)
+
+    # Attach live activity indicators
+    indicator = ActivityIndicator()
+
+    def register_agent_indicator(agent):
+        def on_thinking(messages, **kwargs):
+            indicator.start(f"{agent.name} is evaluating options & reasoning")
+            return messages
+
+        def on_finished(message, **kwargs):
+            indicator.stop(completion_label=f"{agent.name} completed turn")
+            return message
+
+        agent.register_hook(hookable_method="process_all_messages_before_reply", hook=on_thinking)
+        agent.register_hook(hookable_method="process_message_before_send", hook=on_finished)
+
+    register_agent_indicator(store_ops)
+    register_agent_indicator(inventory_merch)
+
     print(f"   [READY] {store_ops.name} initialized.")
     print(f"   [READY] {inventory_merch.name} initialized.")
     print("-" * 78)
@@ -74,12 +134,15 @@ def run_escalation_simulation():
     print("\n[START] Initiating autonomous conversation between agents...\n")
 
     # Start chat
-    chat_result = store_ops.initiate_chat(
-        recipient=inventory_merch,
-        message=initial_alert,
-        max_turns=6,
-        summary_method="last_msg",
-    )
+    try:
+        chat_result = store_ops.initiate_chat(
+            recipient=inventory_merch,
+            message=initial_alert,
+            max_turns=6,
+            summary_method="last_msg",
+        )
+    finally:
+        indicator.stop()
 
     print_banner("SIMULATION COMPLETED")
     print("Chat history turns recorded:", len(chat_result.chat_history))
