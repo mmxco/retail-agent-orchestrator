@@ -144,12 +144,5 @@ retail-agent-orchestrator/
 
 ---
 
-## 🔮 Phase 3 Roadmap
-- **Live Inventory Tools**: Registering AutoGen function-calling tools (`get_dc_inventory`, `check_store_stock`, `calculate_freight`).
-- **ERP Webhook Integration**: Auto-generating and posting EDI 856 and transfer order payloads directly to SAP / NetSuite mock endpoints.
-- **Procurement & Logistics Agents**: Expanding the conversation to a 4-agent GroupChat featuring Dedicated Freight Dispatch and Vendor Relations.
-
----
-
 ## 📄 License
 MIT License. Free for retail engineering experimentation and research.
