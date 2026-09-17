@@ -1,4 +1,4 @@
-# Retail Multi-Agent Inventory Escalation System (Phase 2)
+# Retail Multi-Agent Inventory Escalation System
 
 An autonomous multi-agent retail orchestration system powered by **Microsoft AutoGen** (`pyautogen`) and **Google Gemini** models (`gemini-2.5-flash` / `gemini-2.5-pro`) interfacing through Google's OpenAI-compatible endpoint.
 
